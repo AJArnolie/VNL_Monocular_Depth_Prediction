@@ -6,6 +6,7 @@ import torch.nn as nn
 from lib.core.config import cfg
 from lib.utils.logging import setup_logging
 
+
 logger = setup_logging(__name__)
 
 
@@ -51,10 +52,10 @@ def load_ckpt(args, model, optimizer=None, scheduler=None, val_err=[]):
 
 
 def save_ckpt(args, step, epoch, model, optimizer, scheduler, val_err={}):
+    
     """Save checkpoint"""
-    ckpt_dir = os.path.join(cfg.TRAIN.LOG_DIR, 'ckpt')
-    if not os.path.exists(ckpt_dir):
-        os.makedirs(ckpt_dir)
+    ckpt_dir = os.path.join(cfg.TRAIN.LOG_DIR, 'checkpoint')
+    os.makedirs(ckpt_dir, exist_ok=True)
     save_name = os.path.join(ckpt_dir, 'epoch%d_step%d.pth' %(epoch, step))
     if isinstance(model, nn.DataParallel):
         model = model.module

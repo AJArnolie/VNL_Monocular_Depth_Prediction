@@ -10,34 +10,32 @@ from lib.utils.logging import setup_logging
 
 logger = setup_logging(__name__)
 
+def read_json(json_path):
+    with open(json_path, 'r') as j:
+        info = json.loads(j.read())
+    return info
 
 class NYUDV2Dataset():
     def initialize(self, opt):
         self.opt = opt
-        self.root = opt.dataroot
-        self.depth_normalize = 60000.
-        self.dir_anno = os.path.join(cfg.ROOT_DIR, opt.dataroot, 'annotations', opt.phase_anno + '_annotations.json')
-        self.A_paths, self.B_paths, self.AB_anno = self.getData()
-        self.data_size = len(self.AB_anno)
-        self.uniform_size = (480, 640)
-
-    def getData(self):
-        with open(self.dir_anno, 'r') as load_f:
-            AB_anno = json.load(load_f)
-        if 'dir_AB' in AB_anno[0].keys():
-            self.dir_AB = os.path.join(cfg.ROOT_DIR, self.opt.dataroot, self.opt.phase_anno, AB_anno[0]['dir_AB'])
-            AB = sio.loadmat(self.dir_AB)
-            self.A = AB['rgbs']
-            self.B = AB['depths']
-            self.depth_normalize = 10.0
+        self.A_paths = []
+        self.B_paths = []
+        if opt.phase == "train" :
+            for one_info in read_json(self.opt.coco_train)["images"]:
+                self.A_paths.append(os.path.join(self.opt.coco_train_root, one_info["img_path"]))
+                if self.opt.refined_depth:
+                    self.B_paths.append(os.path.join(self.opt.coco_train_root, one_info["mesh_refined_path"]))
+                else:
+                    self.B_paths.append(os.path.join(self.opt.coco_train_root, one_info["mesh_raw_path"]))
         else:
-            self.A = None
-            self.B = None
-        A_list = [os.path.join(cfg.ROOT_DIR, self.opt.dataroot, self.opt.phase_anno, AB_anno[i]['rgb_path']) for i in range(len(AB_anno))]
-        B_list = [os.path.join(cfg.ROOT_DIR, self.opt.dataroot, self.opt.phase_anno, AB_anno[i]['depth_path']) for i in range(len(AB_anno))]
-        logger.info('Loaded NYUDV2 data!')
-        return A_list, B_list, AB_anno
+            for one_info in read_json(self.opt.coco_val)["images"]:
+                self.A_paths.append(os.path.join(self.opt.coco_val_root, one_info["img_path"]))
+                if self.opt.refined_depth:
+                    self.B_paths.append(os.path.join(self.opt.coco_val_root, one_info["mesh_refined_path"]))
+                else:
+                    self.B_paths.append(os.path.join(self.opt.coco_val_root, one_info["mesh_raw_path"]))
 
+        self.data_size = len(self.A_paths) # A : rgb ; b : RGBD
 
     def __getitem__(self, anno_index):
         data = self.online_aug(anno_index)
@@ -52,36 +50,47 @@ class NYUDV2Dataset():
         A_path = self.A_paths[anno_index]
         B_path = self.B_paths[anno_index]
 
-        if self.A is None:
-            A = cv2.imread(A_path)  # bgr, H*W*C
-            B = cv2.imread(B_path, -1) / self.depth_normalize  # the max depth is 10m
-        else:
-            A = self.A[anno_index]  # C*W*H
-            B = self.B[anno_index] / self.depth_normalize # the max depth is 10m
-            A = A.transpose((2, 1, 0))  # H * W * C
-            B = B.transpose((1, 0))  # H * W
-            A = A[:, :, ::-1].copy() #rgb -> bgr
+        # if self.A is None:
+        #     A = cv2.imread(A_path)  # bgr, H*W*C
+        #     B = cv2.imread(B_path, -1) / self.depth_normalize  # the max depth is 10m
+        # else:
+        # A = self.A[anno_index]  # C*W*H
+        B = cv2.imread(self.B_paths[anno_index], cv2.IMREAD_ANYDEPTH) / self.opt.depth_shift # shift "depth_shift" to meter
+        # B = self.B[anno_index] / self.depth_normalize # the max depth is 10m
+        A = cv2.imread(self.A_paths[anno_index])  # H * W * C
+        # B = B.transpose((1, 0))  # H * W
+        # A = A[:, :, ::-1].copy() #rgb -> bgr
 
-        flip_flg, crop_size, pad, resize_ratio = self.set_flip_pad_reshape_crop()
+        # flip_flg, crop_size, pad, resize_ratio = self.set_flip_pad_reshape_crop()
 
-        A_resize = self.flip_pad_reshape_crop(A, flip_flg, crop_size, pad, 128)
-        B_resize = self.flip_pad_reshape_crop(B, flip_flg, crop_size, pad, -1)
+        # A_resize = self.flip_pad_reshape_crop(A, flip_flg, crop_size, pad, 128)
+        # B_resize = self.flip_pad_reshape_crop(B, flip_flg, crop_size, pad, -1)
 
+        # A_resize = A_resize.transpose((2, 0, 1))
+        # B_resize = B_resize[np.newaxis, :, :]
+
+        # # change the color channel, bgr -> rgb
+        # A_resize = A_resize[::-1, :, :]
+
+        # # to torch, normalize
+        # A_resize = self.scale_torch(A_resize, 255.)
+        # B_resize = self.scale_torch(B_resize, resize_ratio)
+        A_resize = cv2.resize(A, (self.opt.input_width, self.opt.input_height), interpolation = cv2.INTER_NEAREST) 
+        A_resize = cv2.cvtColor(A_resize, cv2.COLOR_BGR2RGB)
         A_resize = A_resize.transpose((2, 0, 1))
+        
+        B_resize =  cv2.resize(B, (self.opt.input_width, self.opt.input_height), interpolation = cv2.INTER_NEAREST) 
         B_resize = B_resize[np.newaxis, :, :]
 
-        # change the color channel, bgr -> rgb
-        A_resize = A_resize[::-1, :, :]
-
-        # to torch, normalize
         A_resize = self.scale_torch(A_resize, 255.)
-        B_resize = self.scale_torch(B_resize, resize_ratio)
-
+        B_resize = self.scale_torch(B_resize, 1.)
+        
         B_bins = self.depth_to_bins(B_resize)
-        invalid_side = [int(pad[0] * resize_ratio), 0, 0, 0]
+        # invalid_side = [int(pad[0] * resize_ratio), 0, 0, 0]
+        
 
         data = {'A': A_resize, 'B': B_resize, 'A_raw': A, 'B_raw': B, 'B_bins': B_bins, 'A_paths': A_path,
-                'B_paths': B_path, 'invalid_side': np.array(invalid_side), 'ratio': np.float32(1.0 / resize_ratio)}
+                'B_paths': B_path, 'depth_shift': np.float32(self.opt.depth_shift)} # 'invalid_side': np.array(invalid_side), 'ratio': np.float32(1.0 / resize_ratio)}
         return data
 
     def set_flip_pad_reshape_crop(self):

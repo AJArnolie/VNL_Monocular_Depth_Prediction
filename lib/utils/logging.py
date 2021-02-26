@@ -5,12 +5,13 @@ import logging
 import numpy as np
 import sys
 from lib.core.config import cfg
+import os
 
 
 def log_stats(stats, args):
     """Log training statistics to terminal"""
-    lines = "[Step %d/%d] [Epoch %d/%d]  [%s]\n" % (
-            stats['iter'], cfg.TRAIN.MAX_ITER, stats['epoch'], args.epoch, args.dataset)
+    lines = "[Step %d/%d] [Epoch %d/%d] \n" % (
+            stats['iter'], cfg.TRAIN.MAX_ITER, stats['epoch'], args.epoch)
 
     lines += "\t\tloss: %.3f,    time: %.6f,    eta: %s\n" % (
         stats['total_loss'], stats['time'], stats['eta'])
@@ -27,6 +28,11 @@ def log_stats(stats, args):
     lines += "\t\t" + ",       ".join("%s: %.6f" % (k, v) for k, v in stats['lr'].items()) + ", "
     lines += '\n'
     print(lines[:-1])  # remove last new line
+
+    log_file_save_path = os.path.join(cfg.TRAIN.LOG_DIR, "exp_output.log")
+    FORMAT = '%(levelname)s %(filename)s:%(lineno)4d: %(message)s'
+    logging.basicConfig(filename=log_file_save_path, filemode="a", level=logging.INFO, format=FORMAT)
+    logging.info(lines[:-1])
 
 
 class SmoothedValue(object):
@@ -56,11 +62,13 @@ class SmoothedValue(object):
 
 
 def setup_logging(name):
+    log_file_save_path = os.path.join(cfg.TRAIN.LOG_DIR, "exp_output.log")
     FORMAT = '%(levelname)s %(filename)s:%(lineno)4d: %(message)s'
     # Manually clear root loggers to prevent any module that may have called
     # logging.basicConfig() from blocking our logging setup
     logging.root.handlers = []
-    logging.basicConfig(level=logging.INFO, format=FORMAT, stream=sys.stdout)
+    # logging.basicConfig(level=logging.INFO, format=FORMAT, stream=sys.stdout)
+    logging.basicConfig(filename=log_file_save_path, filemode="a", level=logging.INFO, format=FORMAT)
     logger = logging.getLogger(name)
     return logger
 

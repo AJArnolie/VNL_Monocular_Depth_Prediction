@@ -18,7 +18,8 @@ cfg = __C
 
 # Root directory of project
 __C.ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+__C.TRAIN_COCO = ""
+__C.TEST_COCO = ""
 # ---------------------------------------------------------------------------- #
 # Data configurations
 # ---------------------------------------------------------------------------- #
@@ -33,7 +34,7 @@ __C.DATASET.CROP_SIZE = (385, 385)  # (height, width)
 # Minimum depth after data augmentation
 __C.DATASET.DEPTH_MIN = 0.001
 # Maximum depth
-__C.DATASET.DEPTH_MAX = 1.0
+__C.DATASET.DEPTH_MAX = 10.0
 __C.DATASET.DEPTH_MIN_LOG = np.log10(__C.DATASET.DEPTH_MIN)
 # Minimum depth in log space
 # Interval of each bin
@@ -79,7 +80,7 @@ __C.MODEL.FREEZE_BACKBONE_BN = False
 __C.TRAIN = AttrDict()
 # Load run name, which is the combination of running time and host name
 __C.TRAIN.RUN_NAME = get_run_name()
-__C.TRAIN.OUTPUT_DIR = './outputs'
+__C.TRAIN.OUTPUT_DIR = './output'
 # Dir for checkpoint and logs
 __C.TRAIN.LOG_DIR = os.path.join(__C.TRAIN.OUTPUT_DIR, cfg.TRAIN.RUN_NAME)
 # Differ the learning rate between encoder and decoder
@@ -91,8 +92,8 @@ __C.TRAIN.EPOCH = 20
 __C.TRAIN.MAX_ITER = 0
 # Snapshot (model checkpoint) period
 __C.TRAIN.SNAPSHOT_ITERS = 2000
-__C.TRAIN.VAL_STEP = 2000
-__C.TRAIN.BATCHSIZE = 4
+__C.TRAIN.VAL_STEP = 20
+__C.TRAIN.batchsize = 4
 __C.TRAIN.GPU_NUM = 1
 # Steps for LOG interval
 __C.TRAIN.LOG_INTERVAL = 10
@@ -126,6 +127,13 @@ def merge_cfg_from_file(train_args):
         yaml_cfg = AttrDict(yaml.load(f))
     _merge_a_into_b(yaml_cfg, __C)
     __C.DATASET.DEPTH_MIN_LOG = np.log10(__C.DATASET.DEPTH_MIN)
+    __C.DATASET.CROP_SIZE = (train_args.input_height, train_args.input_width)
+    __C.TRAIN.BASE_LR = train_args.lr
+    __C.TRAIN.LOG_DIR = train_args.results_dir
+    __C.TRAIN.SNAPSHOT_ITERS = train_args.siter
+    __C.DATASET.FOCAL_Y = train_args.f
+    __C.DATASET.FOCAL_X = train_args.f
+    __C.DATASET.DEPTH_MAX = 10.0
     # Modify some configs
     __C.DATASET.DEPTH_BIN_INTERVAL = (np.log10(__C.DATASET.DEPTH_MAX) - np.log10(
         __C.DATASET.DEPTH_MIN)) / __C.MODEL.DECODER_OUTPUT_C
