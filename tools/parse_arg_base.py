@@ -55,7 +55,6 @@ class BaseOptions():
         parser.add_argument('--start_step', default=0, type=int, help='Set training steps')
         parser.add_argument('--thread', default=4, type=int, help='Thread for loading data')
         parser.add_argument('--use_tfboard', action='store_true', help='Tensorboard to log training info')
-        # parser.add_argument('--results_dir', type=str, default='output', help='Output dir')
         self.initialized = True
         return parser
 

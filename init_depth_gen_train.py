@@ -131,6 +131,7 @@ if __name__=='__main__':
     
     
     config_save_path = os.path.join(train_opt.opt.results_dir, "setting.txt")
+    
     # train_opt.print_options(train_args)
     with open(config_save_path, "w") as file:
         file.write("####################### train args #######################")
