@@ -50,31 +50,8 @@ class NYUDV2Dataset():
         A_path = self.A_paths[anno_index]
         B_path = self.B_paths[anno_index]
 
-        # if self.A is None:
-        #     A = cv2.imread(A_path)  # bgr, H*W*C
-        #     B = cv2.imread(B_path, -1) / self.depth_normalize  # the max depth is 10m
-        # else:
-        # A = self.A[anno_index]  # C*W*H
         B = cv2.imread(self.B_paths[anno_index], cv2.IMREAD_ANYDEPTH) / self.opt.depth_shift # shift "depth_shift" to meter
-        # B = self.B[anno_index] / self.depth_normalize # the max depth is 10m
         A = cv2.imread(self.A_paths[anno_index])  # H * W * C
-        # B = B.transpose((1, 0))  # H * W
-        # A = A[:, :, ::-1].copy() #rgb -> bgr
-
-        # flip_flg, crop_size, pad, resize_ratio = self.set_flip_pad_reshape_crop()
-
-        # A_resize = self.flip_pad_reshape_crop(A, flip_flg, crop_size, pad, 128)
-        # B_resize = self.flip_pad_reshape_crop(B, flip_flg, crop_size, pad, -1)
-
-        # A_resize = A_resize.transpose((2, 0, 1))
-        # B_resize = B_resize[np.newaxis, :, :]
-
-        # # change the color channel, bgr -> rgb
-        # A_resize = A_resize[::-1, :, :]
-
-        # # to torch, normalize
-        # A_resize = self.scale_torch(A_resize, 255.)
-        # B_resize = self.scale_torch(B_resize, resize_ratio)
         A_resize = cv2.resize(A, (self.opt.input_width, self.opt.input_height), interpolation = cv2.INTER_NEAREST) 
         A_resize = cv2.cvtColor(A_resize, cv2.COLOR_BGR2RGB)
         A_resize = A_resize.transpose((2, 0, 1))
@@ -86,11 +63,9 @@ class NYUDV2Dataset():
         B_resize = self.scale_torch(B_resize, 1.)
         
         B_bins = self.depth_to_bins(B_resize)
-        # invalid_side = [int(pad[0] * resize_ratio), 0, 0, 0]
-        
 
         data = {'A': A_resize, 'B': B_resize, 'A_raw': A, 'B_raw': B, 'B_bins': B_bins, 'A_paths': A_path,
-                'B_paths': B_path, 'depth_shift': np.float32(self.opt.depth_shift)} # 'invalid_side': np.array(invalid_side), 'ratio': np.float32(1.0 / resize_ratio)}
+                'B_paths': B_path, 'depth_shift': np.float32(self.opt.depth_shift)} 
         return data
 
     def set_flip_pad_reshape_crop(self):
