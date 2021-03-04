@@ -104,7 +104,6 @@ def val(val_dataloader, model, final_result):
     smoothed_absRel = SmoothedValue(len(val_dataloader))
     smoothed_criteria = {'err_absRel': smoothed_absRel}
     for i, data in enumerate(tqdm(val_dataloader)):
-        # invalid_side = data['invalid_side'][0]
         out = model.module.inference(data)
         pred_depth = torch.squeeze(out['b_fake'])
 
@@ -127,12 +126,8 @@ def val(val_dataloader, model, final_result):
 
 
 if __name__=='__main__':
-    # Train args
-    
-    
+
     config_save_path = os.path.join(train_opt.opt.results_dir, "setting.txt")
-    
-    # train_opt.print_options(train_args)
     with open(config_save_path, "w") as file:
         file.write("####################### train args #######################")
         file.write("\n")
@@ -148,7 +143,6 @@ if __name__=='__main__':
     val_args = val_opt.parse()
     val_args.batchsize = 1
     val_args.thread = 0
-    # val_opt.print_options(val_args)
 
     with open(config_save_path, "w") as file:
         file.write("####################### val args #######################")
@@ -158,10 +152,6 @@ if __name__=='__main__':
             file.write("\n")
     print("output saved to : ", val_args.results_dir)
     print("config_save_path : ", config_save_path)
-
-    
-    
-    
 
     train_dataloader = CustomerDataLoader(train_args)
     train_datasize = len(train_dataloader)
