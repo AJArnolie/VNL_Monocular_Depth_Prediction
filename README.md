@@ -1,4 +1,4 @@
-# Mirror3D --- init_depth_generator BTS
+# Mirror3D --- init_depth_generator VNL
 
 We've updated the dataloader and the main train/test script to support our input format (coco format).
 
