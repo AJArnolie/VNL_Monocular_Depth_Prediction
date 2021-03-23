@@ -1,4 +1,8 @@
-#### Enforcing geometric constraints of virtual normal for depth prediction.
+# Mirror3D --- init_depth_generator BTS
+
+We've updated the dataloader and the main train/test script to support our input format (coco format).
+
+## Enforcing geometric constraints of virtual normal for depth prediction.
 
 [NEW] Training codes have been uploaded!
 
