@@ -64,7 +64,7 @@ class NYUDV2Dataset():
         
         B_bins = self.depth_to_bins(B_resize)
 
-        data = {'A': A_resize, 'B': B_resize, 'A_raw': A, 'B_raw': B, 'B_bins': B_bins, 'A_paths': A_path,
+        data = {'A': A_resize, 'B': B_resize, 'A_raw': A_resize, 'B_raw': B_resize, 'B_bins': B_bins, 'A_paths': A_path,
                 'B_paths': B_path, 'depth_shift': np.float32(self.opt.depth_shift)} 
         return data
 
