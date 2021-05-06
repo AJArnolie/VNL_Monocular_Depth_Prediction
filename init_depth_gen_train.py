@@ -37,6 +37,7 @@ train_opt.opt.results_dir = os.path.join(train_opt.opt.results_dir, "vnl","{}_{}
 os.makedirs(train_opt.opt.results_dir, exist_ok=True)
 merge_cfg_from_file(train_args)
 cfg.TRAIN.LOG_DIR = train_opt.opt.results_dir
+is_converge = False
 
 from data.load_dataset import CustomerDataLoader
 from lib.utils.training_stats import TrainingStats
@@ -50,6 +51,7 @@ import traceback
 
 from tools.parse_arg_val import ValOptions
 from lib.models.image_transfer import resize_image
+from utils.general_utlis import check_converge
 
 logger = setup_logging(__name__)
 
@@ -62,6 +64,8 @@ def train(train_dataloader, model, epoch, loss_func,
     model.train()
     epoch_steps = math.ceil(len(train_dataloader) / cfg.TRAIN.batchsize)
     base_steps = epoch_steps * epoch + ignore_step if ignore_step != -1 else epoch_steps * epoch
+    mirror_rmse_list = []
+    checkpoint_save_list = []
     for i, data in enumerate(train_dataloader):
         if ignore_step != -1 and i > epoch_steps - ignore_step:
             return
@@ -82,13 +86,26 @@ def train(train_dataloader, model, epoch, loss_func,
         # validate the model
         if step % cfg.TRAIN.VAL_STEP == 0 and step != 0 and val_dataloader is not None:
             model.eval()
-            val_err[0] = val(val_dataloader, model, False)
+            val_err[0], mirror_rmse = val(val_dataloader, model, False) 
+            mirror_rmse_list.append(mirror_rmse)
+            
+            training_stats.tblogger.add_scalar("mirror_rmse", mirror_rmse, step)
             # training mode
             model.train()
 
-        if step % cfg.TRAIN.SNAPSHOT_ITERS == 0 and step != 0:
             save_ckpt(train_args, step, epoch, model, optimizer.optimizer, scheduler, val_err[0])
-    
+            ckpt_dir = os.path.join(cfg.TRAIN.LOG_DIR, 'checkpoint')
+            checkpoint_save_path = os.path.join(ckpt_dir, 'epoch%d_step%d.pth' %(epoch, step))
+            checkpoint_save_list.append(checkpoint_save_path)
+
+        if check_converge(rmse_list=mirror_rmse_list):
+            import shutil
+            is_converge = True
+            print("############## model is converged ##############")
+            final_checkpoint_src = checkpoint_save_list[-3]
+            final_checkpoint_dst = os.path.join(os.path.split(final_checkpoint_src)[0], "converge_{}".format(os.path.split(final_checkpoint_src)[-1]))
+            shutil.copy(final_checkpoint_src, final_checkpoint_dst)
+            exit()
 
 
 def val(val_dataloader, model, final_result):
@@ -122,7 +139,8 @@ def val(val_dataloader, model, final_result):
         
     mirror3d_eval.print_mirror3D_score()
     print("update : {}".format(cfg.TRAIN.LOG_DIR))
-    return {'abs_rel': smoothed_criteria['err_absRel'].GetGlobalAverageValue()}
+    mirror_rmse = (mirror3d_eval.m_nm_all_refD/ mirror3d_eval.ref_cnt)[0]
+    return {'abs_rel': smoothed_criteria['err_absRel'].GetGlobalAverageValue()}, mirror_rmse
 
 
 if __name__=='__main__':
@@ -209,8 +227,10 @@ if __name__=='__main__':
             train(train_dataloader, model, epoch, loss_func, optimizer, scheduler, training_stats,
                   val_dataloader, val_err, ignore_step)
             ignore_step = -1
+            if is_converge:
+                break
         model.eval()    
-        _ = val(val_dataloader, model, True)
+        _, mirror_rmse = val(val_dataloader, model, True)
 
     except (RuntimeError, KeyboardInterrupt):
 
