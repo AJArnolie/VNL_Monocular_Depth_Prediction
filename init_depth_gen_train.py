@@ -64,7 +64,7 @@ def train(train_dataloader, model, epoch, loss_func,
     model.train()
     epoch_steps = math.ceil(len(train_dataloader) / cfg.TRAIN.batchsize)
     base_steps = epoch_steps * epoch + ignore_step if ignore_step != -1 else epoch_steps * epoch
-    mirror_rmse_list = []
+    mirror_score_list = []
     checkpoint_save_list = []
     for i, data in enumerate(train_dataloader):
         if ignore_step != -1 and i > epoch_steps - ignore_step:
@@ -87,7 +87,7 @@ def train(train_dataloader, model, epoch, loss_func,
         if step % cfg.TRAIN.VAL_STEP == 0 and step != 0 and val_dataloader is not None:
             model.eval()
             val_err[0], mirror_rmse = val(val_dataloader, model, False) 
-            mirror_rmse_list.append(mirror_rmse)
+            mirror_score_list.append(mirror_rmse)
             
             training_stats.tblogger.add_scalar("mirror_rmse", mirror_rmse, step)
             # training mode
@@ -98,7 +98,7 @@ def train(train_dataloader, model, epoch, loss_func,
             checkpoint_save_path = os.path.join(ckpt_dir, 'epoch%d_step%d.pth' %(epoch, step))
             checkpoint_save_list.append(checkpoint_save_path)
 
-        if check_converge(rmse_list=mirror_rmse_list):
+        if check_converge(score_list=mirror_score_list):
             import shutil
             is_converge = True
             print("############## model is converged ##############")
