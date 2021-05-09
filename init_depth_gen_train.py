@@ -57,15 +57,14 @@ logger = setup_logging(__name__)
 
 
 def train(train_dataloader, model, epoch, loss_func,
-          optimizer, scheduler, training_stats, val_dataloader=None, val_err=[], ignore_step=-1):
+          optimizer, scheduler, training_stats, val_dataloader=None, val_err=[], ignore_step=-1,mirror_score_list=[],checkpoint_save_list=[]):
     """
     Train the model in steps
     """
     model.train()
     epoch_steps = math.ceil(len(train_dataloader) / cfg.TRAIN.batchsize)
     base_steps = epoch_steps * epoch + ignore_step if ignore_step != -1 else epoch_steps * epoch
-    mirror_score_list = []
-    checkpoint_save_list = []
+    
     for i, data in enumerate(train_dataloader):
         if ignore_step != -1 and i > epoch_steps - ignore_step:
             return
@@ -155,6 +154,8 @@ if __name__=='__main__':
     print("output saved to : ", train_opt.opt.results_dir)
     print("config_save_path : ", config_save_path)
 
+    mirror_score_list = []
+    checkpoint_save_list = []
 
     # Validation args
     val_opt = ValOptions()
@@ -225,7 +226,7 @@ if __name__=='__main__':
         for epoch in range(train_args.start_epoch, train_args.epoch):
             # training
             train(train_dataloader, model, epoch, loss_func, optimizer, scheduler, training_stats,
-                  val_dataloader, val_err, ignore_step)
+                  val_dataloader, val_err, ignore_step,mirror_score_list,checkpoint_save_list)
             ignore_step = -1
             if is_converge:
                 break
