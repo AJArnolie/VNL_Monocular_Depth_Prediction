@@ -22,19 +22,18 @@ class NYUDV2Dataset():
         self.B_paths = []
         if opt.phase == "train" :
             for one_info in read_json(self.opt.coco_train)["images"]:
-                self.A_paths.append(os.path.join(self.opt.coco_train_root, one_info["img_path"]))
+                self.A_paths.append(os.path.join(self.opt.coco_train_root, one_info["mirror_color_image_path"]))
                 if self.opt.refined_depth:
-                    self.B_paths.append(os.path.join(self.opt.coco_train_root, one_info["mesh_refined_path"]))
+                    self.B_paths += [[os.path.join(self.opt.coco_train_root, one_info["refined_meshD_path"]),os.path.join(self.opt.coco_train_root, one_info["raw_meshD_path"]),os.path.join(self.opt.coco_train_root, one_info["mirror_instance_mask_path"])]]
                 else:
-                    self.B_paths.append(os.path.join(self.opt.coco_train_root, one_info["mesh_raw_path"]))
+                    self.B_paths += [[os.path.join(self.opt.coco_train_root, one_info["raw_meshD_path"]),os.path.join(self.opt.coco_train_root, one_info["raw_meshD_path"]),os.path.join(self.opt.coco_train_root, one_info["mirror_instance_mask_path"])]]
         else:
             for one_info in read_json(self.opt.coco_val)["images"]:
-                self.A_paths.append(os.path.join(self.opt.coco_val_root, one_info["img_path"]))
+                self.A_paths.append(os.path.join(self.opt.coco_val_root, one_info["mirror_color_image_path"]))
                 if self.opt.refined_depth:
-                    self.B_paths.append(os.path.join(self.opt.coco_val_root, one_info["mesh_refined_path"]))
+                    self.B_paths += [[os.path.join(self.opt.coco_val_root, one_info["refined_meshD_path"]),os.path.join(self.opt.coco_val_root, one_info["raw_meshD_path"]),os.path.join(self.opt.coco_val_root, one_info["mirror_instance_mask_path"])]]
                 else:
-                    self.B_paths.append(os.path.join(self.opt.coco_val_root, one_info["mesh_raw_path"]))
-
+                    self.B_paths += [[os.path.join(self.opt.coco_val_root, one_info["raw_meshD_path"]),os.path.join(self.opt.coco_val_root, one_info["raw_meshD_path"]),os.path.join(self.opt.coco_val_root, one_info["mirror_instance_mask_path"])]]
         self.data_size = len(self.A_paths) # A : rgb ; b : RGBD
 
     def __getitem__(self, anno_index):
@@ -48,9 +47,9 @@ class NYUDV2Dataset():
         :param anno_index: data index.
         """
         A_path = self.A_paths[anno_index]
-        B_path = self.B_paths[anno_index]
+        B_path = self.B_paths[anno_index][0]
 
-        B = cv2.imread(self.B_paths[anno_index], cv2.IMREAD_ANYDEPTH) / self.opt.depth_shift # shift "depth_shift" to meter
+        B = cv2.imread(self.B_paths[anno_index][0], cv2.IMREAD_ANYDEPTH) / self.opt.depth_shift # shift "depth_shift" to meter
         A = cv2.imread(self.A_paths[anno_index])  # H * W * C
         A_resize = cv2.resize(A, (self.opt.input_width, self.opt.input_height), interpolation = cv2.INTER_NEAREST) 
         A_resize = cv2.cvtColor(A_resize, cv2.COLOR_BGR2RGB)
@@ -65,7 +64,7 @@ class NYUDV2Dataset():
         B_bins = self.depth_to_bins(B_resize)
 
         data = {'A': A_resize, 'B': B_resize, 'A_raw': A_resize, 'B_raw': B_resize, 'B_bins': B_bins, 'A_paths': A_path,
-                'B_paths': B_path, 'depth_shift': np.float32(self.opt.depth_shift)} 
+                'B_paths': B_path, 'depth_shift': np.float32(self.opt.depth_shift), 'rawD':self.B_paths[anno_index][1], 'mask_path':self.B_paths[anno_index][2]} 
         return data
 
     def set_flip_pad_reshape_crop(self):

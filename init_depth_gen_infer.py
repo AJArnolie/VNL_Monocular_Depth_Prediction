@@ -78,10 +78,10 @@ if __name__ == '__main__':
     logging.info("output folder {}".format(output_folder))
     logging.info("checkpoint {}".format(test_args.load_ckpt))
 
-    mirror3d_eval = Mirror3d_eval(test_args.refined_depth,logger=logging,Input_tag="RGB", method_tag="VNL")
+    mirror3d_eval = Mirror3d_eval(test_args.refined_depth,logger=logging,Input_tag="RGB", method_tag="VNL",dataset_root=test_args.coco_val_root)
 
     for info in tqdm(coco_val_info["images"]):
-        img_path = os.path.join(test_args.coco_val_root, info["img_path"])
+        img_path = os.path.join(test_args.coco_val_root, info["mirror_color_image_path"])
         with torch.no_grad():
             img = cv2.imread(img_path)
             img_resize = cv2.resize(img, (int(img.shape[1]), int(img.shape[0])), interpolation=cv2.INTER_LINEAR)
@@ -97,19 +97,19 @@ if __name__ == '__main__':
 
             if test_args.refined_depth:
                 if test_args.mesh_depth: # mesh refine
-                    gt_depth_path = os.path.join(test_args.coco_val_root.strip().split(",")[0], info["mesh_refined_path"])
+                    gt_depth_path = os.path.join(test_args.coco_val_root.strip().split(",")[0], info["refined_meshD_path"])
                 else:  # hole refine
-                    gt_depth_path = os.path.join(test_args.coco_val_root.strip().split(",")[0], info["hole_refined_path"])
+                    gt_depth_path = os.path.join(test_args.coco_val_root.strip().split(",")[0], info["refined_sensorD_path"])
             else:
                 if test_args.mesh_depth: # mesh raw
-                    gt_depth_path = os.path.join(test_args.coco_val_root.strip().split(",")[0], info["mesh_raw_path"])
+                    gt_depth_path = os.path.join(test_args.coco_val_root.strip().split(",")[0], info["raw_meshD_path"])
                 else:# mesh raw hole raw
-                    gt_depth_path = os.path.join(test_args.coco_val_root.strip().split(",")[0], info["hole_raw_path"])   
+                    gt_depth_path = os.path.join(test_args.coco_val_root.strip().split(",")[0], info["raw_sensorD_path"])   
 
             gt_depth = cv2.resize(cv2.imread(gt_depth_path, cv2.IMREAD_ANYDEPTH), (pred_depth_scale.shape[1], pred_depth_scale.shape[0]), 0, 0, cv2.INTER_NEAREST)
             color_img_path = img_path
-            mirror3d_eval.compute_and_update_mirror3D_metrics(pred_depth_scale / test_args.depth_shift, test_args.depth_shift, color_img_path)
-            mirror3d_eval.save_result(output_folder, pred_depth_scale / test_args.depth_shift, test_args.depth_shift, color_img_path)
+            mirror3d_eval.compute_and_update_mirror3D_metrics(pred_depth_scale / test_args.depth_shift, test_args.depth_shift, color_img_path, os.path.join(test_args.coco_val_root.strip().split(",")[0],info["raw_meshD_path"]), gt_depth_path, os.path.join(test_args.coco_val_root.strip().split(",")[0],info["mirror_instance_mask_path"]))
+            mirror3d_eval.save_result(output_folder, pred_depth_scale / test_args.depth_shift, test_args.depth_shift, color_img_path, os.path.join(test_args.coco_val_root.strip().split(",")[0],info["raw_meshD_path"]), gt_depth_path, os.path.join(test_args.coco_val_root.strip().split(",")[0],info["mirror_instance_mask_path"]))
 
     mirror3d_eval.print_mirror3D_score()
     print("checkpoint : ", test_args.load_ckpt)

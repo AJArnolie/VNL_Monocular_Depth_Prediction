@@ -98,14 +98,14 @@ def train(train_dataloader, model, epoch, loss_func,
             checkpoint_save_path = os.path.join(ckpt_dir, 'epoch%d_step%d.pth' %(epoch, step))
             checkpoint_save_list.append(checkpoint_save_path)
 
-        if check_converge(rmse_list=mirror_rmse_list):
-            import shutil
-            is_converge = True
-            print("############## model is converged ##############")
-            final_checkpoint_src = checkpoint_save_list[-3]
-            final_checkpoint_dst = os.path.join(os.path.split(final_checkpoint_src)[0], "converge_{}".format(os.path.split(final_checkpoint_src)[-1]))
-            shutil.copy(final_checkpoint_src, final_checkpoint_dst)
-            exit()
+            if check_converge(score_list=mirror_rmse_list):
+                import shutil
+                is_converge = True
+                print("############## model is converged ##############")
+                final_checkpoint_src = checkpoint_save_list[-3]
+                final_checkpoint_dst = os.path.join(os.path.split(final_checkpoint_src)[0], "converge_{}".format(os.path.split(final_checkpoint_src)[-1]))
+                shutil.copy(final_checkpoint_src, final_checkpoint_dst)
+                exit()
 
 
 def val(val_dataloader, model, final_result):
@@ -116,7 +116,7 @@ def val(val_dataloader, model, final_result):
     FORMAT = '%(levelname)s %(filename)s:%(lineno)4d: %(message)s'
     logging.basicConfig(filename=log_file_save_path, filemode="a", level=logging.INFO, format=FORMAT)
     logging.info("output folder {}".format(cfg.TRAIN.LOG_DIR))
-    mirror3d_eval = Mirror3d_eval(train_args.refined_depth, logging, Input_tag="RGB", method_tag="VNL")
+    mirror3d_eval = Mirror3d_eval(train_args.refined_depth, logging, Input_tag="RGB", method_tag="VNL",dataset_root=train_args.coco_val_root)
 
     smoothed_absRel = SmoothedValue(len(val_dataloader))
     smoothed_criteria = {'err_absRel': smoothed_absRel}
@@ -132,9 +132,9 @@ def val(val_dataloader, model, final_result):
         gt_depth_path = data["B_paths"][0]
         gt_depth = cv2.resize(cv2.imread(gt_depth_path, cv2.IMREAD_ANYDEPTH), (pred_depth.shape[1], pred_depth.shape[0]), 0, 0, cv2.INTER_NEAREST)
         pred_depth_scale = (pred_depth / pred_depth.max() *10000).astype(np.uint16)
-        mirror3d_eval.compute_and_update_mirror3D_metrics(pred_depth_scale / data['depth_shift'], data['depth_shift'], color_img_path)
+        mirror3d_eval.compute_and_update_mirror3D_metrics(pred_depth_scale / data['depth_shift'], data['depth_shift'], color_img_path, data["rawD"][0], gt_depth_path, data["mask_path"][0])
         if final_result:
-            mirror3d_eval.save_result(cfg.TRAIN.LOG_DIR, pred_depth_scale / data['depth_shift'], data['depth_shift'], color_img_path)
+            mirror3d_eval.save_result(cfg.TRAIN.LOG_DIR, pred_depth_scale / data['depth_shift'], data['depth_shift'], color_img_path, data["rawD"][0], gt_depth_path, data["mask_path"][0])
 
         
     mirror3d_eval.print_mirror3D_score()
