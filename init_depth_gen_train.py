@@ -51,7 +51,7 @@ import traceback
 
 from tools.parse_arg_val import ValOptions
 from lib.models.image_transfer import resize_image
-from utils.general_utlis import check_converge
+from utils.general_utils import check_converge
 
 logger = setup_logging(__name__)
 
