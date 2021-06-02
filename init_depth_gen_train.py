@@ -4,7 +4,7 @@ import sys
 import datetime
 import time
 import os
-from utils.mirror3d_metrics import Mirror3d_eval
+from utils.mirror3d_metrics import Mirror3dEval
 import cv2
 from tqdm import tqdm
 import logging
@@ -115,7 +115,7 @@ def val(val_dataloader, model, final_result):
     FORMAT = '%(levelname)s %(filename)s:%(lineno)4d: %(message)s'
     logging.basicConfig(filename=log_file_save_path, filemode="a", level=logging.INFO, format=FORMAT)
     logging.info("output folder {}".format(cfg.TRAIN.LOG_DIR))
-    mirror3d_eval = Mirror3d_eval(train_args.refined_depth, logging, Input_tag="RGB", method_tag="VNL",dataset_root=train_args.coco_val_root)
+    mirror3d_eval = Mirror3dEval(train_args.refined_depth, logging, Input_tag="RGB", method_tag="VNL",dataset_root=train_args.coco_val_root)
 
     smoothed_absRel = SmoothedValue(len(val_dataloader))
     smoothed_criteria = {'err_absRel': smoothed_absRel}
