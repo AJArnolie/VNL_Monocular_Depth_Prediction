@@ -97,7 +97,7 @@ def train(train_dataloader, model, epoch, loss_func,
             checkpoint_save_path = os.path.join(ckpt_dir, 'epoch%d_step%d.pth' %(epoch, step))
             checkpoint_save_list.append(checkpoint_save_path)
 
-            if check_converge(score_list=mirror_rmse_list):
+            if check_converge(score_list=mirror_score_list):
                 import shutil
                 is_converge = True
                 print("############## model is converged ##############")
@@ -115,7 +115,7 @@ def val(val_dataloader, model, final_result):
     FORMAT = '%(levelname)s %(filename)s:%(lineno)4d: %(message)s'
     logging.basicConfig(filename=log_file_save_path, filemode="a", level=logging.INFO, format=FORMAT)
     logging.info("output folder {}".format(cfg.TRAIN.LOG_DIR))
-    mirror3d_eval = Mirror3dEval(train_args.refined_depth, logging, Input_tag="RGB", method_tag="VNL",dataset_root=train_args.coco_val_root)
+    mirror3d_eval = Mirror3dEval(train_args.refined_depth, logging, input_tag="RGB", method_tag="VNL",dataset_root=train_args.coco_val_root)
 
     smoothed_absRel = SmoothedValue(len(val_dataloader))
     smoothed_criteria = {'err_absRel': smoothed_absRel}

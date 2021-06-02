@@ -78,7 +78,7 @@ if __name__ == '__main__':
     logging.info("output folder {}".format(output_folder))
     logging.info("checkpoint {}".format(test_args.load_ckpt))
 
-    mirror3d_eval = Mirror3dEval(test_args.refined_depth,logger=logging,Input_tag="RGB", method_tag="VNL",dataset_root=test_args.coco_val_root)
+    mirror3d_eval = Mirror3dEval(test_args.refined_depth,logger=logging,input_tag="RGB", method_tag="VNL",dataset_root=test_args.coco_val_root)
 
     for info in tqdm(coco_val_info["images"]):
         img_path = os.path.join(test_args.coco_val_root, info["mirror_color_image_path"])
