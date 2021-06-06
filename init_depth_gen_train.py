@@ -4,7 +4,7 @@ import sys
 import datetime
 import time
 import os
-from utils.mirror3d_metrics import Mirror3dEval
+from mirror3d.utils.mirror3d_metrics import Mirror3dEval
 import cv2
 from tqdm import tqdm
 import logging
@@ -51,7 +51,7 @@ import traceback
 
 from tools.parse_arg_val import ValOptions
 from lib.models.image_transfer import resize_image
-from utils.general_utils import check_converge
+from mirror3d.utils.general_utils import check_converge
 
 logger = setup_logging(__name__)
 
