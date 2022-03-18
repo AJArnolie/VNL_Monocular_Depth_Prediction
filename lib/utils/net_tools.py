@@ -6,7 +6,6 @@ import torch.nn as nn
 from lib.core.config import cfg
 from lib.utils.logging import setup_logging
 
-
 logger = setup_logging(__name__)
 
 
