@@ -30,8 +30,6 @@ class CustomImgDataset():
             os.mkdir(self.down_path)
         if not os.path.exists(self.data_path):
             os.mkdir(self.data_path)
-        if not os.path.exists(os.path.join(base_path, "depth")):
-            os.mkdir(os.path.join(base_path, "depth"))
         if not os.path.exists(os.path.join(base_path, "VNL_depth")):
             os.mkdir(os.path.join(base_path, "VNL_depth"))
         if not os.path.exists(os.path.join(base_path, "refined_depth")):
